@@ -1,1 +1,3 @@
+Vimba_2_0/*
 build/*
+!build/Makefile
