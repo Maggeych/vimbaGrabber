@@ -2,6 +2,7 @@
 // Author: Markus Frey. All Rights Reserved.
 
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <exception>
 
