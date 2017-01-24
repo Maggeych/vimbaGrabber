@@ -16,7 +16,7 @@ FFmpegOutput::FFmpegOutput(std::string fn, AVCodecID codecId, int width,
   // Get the codec handle.
   AVCodec *codec;
   codec = (AVCodec*) avcodec_find_encoder(codecId);
-  if (!codec) throw std::runtime_error("Codec not found!");
+  if (codec == NULL) throw std::runtime_error("Codec not found!");
 
   // Create the codec's parameters.
   c = avcodec_alloc_context3(codec);
@@ -29,6 +29,7 @@ FFmpegOutput::FFmpegOutput(std::string fn, AVCodecID codecId, int width,
   c->gop_size = 10;
   c->max_b_frames = 1;
   c->pix_fmt = AV_PIX_FMT_YUV420P;
+  av_opt_set(c->priv_data, "crf","0", 0);
   outputPixFmt = c->pix_fmt;
 
   // Start the codec with set parameters.
@@ -163,6 +164,8 @@ static int lockmgr(void **mtx, enum AVLockOp op) {
 
 // _____________________________________________________________________________
 void FFmpegOutput::initMultiThreadSafe() {
+  avcodec_register_all();
+  av_log_set_level(AV_LOG_QUIET);
   if(av_lockmgr_register(lockmgr))
     throw std::runtime_error("Couldn't make ffmpeg multi-thread safe!");
 }
