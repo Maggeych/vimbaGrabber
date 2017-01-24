@@ -18,10 +18,10 @@ extern "C" {
 class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
  public:
   // FFmpegOutput writes each received frame of <camera> to a video file
-  // <filename>.
-  FFmpegOutput(std::string fn, AVCodecID codecId, int width, int height,
-      int fps, int bitRate, AVT::VmbAPI::CameraPtr camera,
-      AVPixelFormat cameraPixFmt, int* cameraLineSize);
+  // <filename> using h264.
+  FFmpegOutput(std::string fn, int width, int height, int fps, std::string crf,
+      AVT::VmbAPI::CameraPtr camera, AVPixelFormat cameraPixFmt,
+      int* cameraLineSize);
   virtual ~FFmpegOutput();
 
   void FrameReceived(const AVT::VmbAPI::FramePtr vimbaFrame);

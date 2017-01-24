@@ -6,35 +6,34 @@
 #include <iostream>
 
 // _____________________________________________________________________________
-FFmpegOutput::FFmpegOutput(std::string fn, AVCodecID codecId, int width,
-    int height, int fps, int bitRate, AVT::VmbAPI::CameraPtr camera,
-    AVPixelFormat cameraPixFmt, int* cameraLineSize) :
+FFmpegOutput::FFmpegOutput(std::string fn, int width, int height, int fps,
+    std::string crf, AVT::VmbAPI::CameraPtr camera, AVPixelFormat cameraPixFmt,
+    int* cameraLineSize) :
     IFrameObserver(camera),
     inputPixFmt(cameraPixFmt),
     inputLineSize(cameraLineSize) {
   pthread_mutex_init(&lock, NULL);
   // Get the codec handle.
   AVCodec *codec;
-  codec = (AVCodec*) avcodec_find_encoder(codecId);
+  codec = (AVCodec*) avcodec_find_encoder(AV_CODEC_ID_H264);
   if (codec == NULL) throw std::runtime_error("Codec not found!");
 
   // Create the codec's parameters.
   c = avcodec_alloc_context3(codec);
   if (!c) throw std::runtime_error("Could not allocate video codec context!");
-  c->bit_rate = bitRate;
   c->width = width;
   c->height = height;
-  c->time_base.num = 1;
+  // c->time_base.num = 1;
   c->time_base.den = fps;
-  c->gop_size = 10;
-  c->max_b_frames = 1;
+  // c->gop_size = 10;
+  // c->max_b_frames = 1;
   c->pix_fmt = AV_PIX_FMT_YUV420P;
-  av_opt_set(c->priv_data, "crf","0", 0);
+  av_opt_set(c->priv_data, "crf", crf.c_str(), 0);
+  av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+
   outputPixFmt = c->pix_fmt;
 
   // Start the codec with set parameters.
-  if (codecId == AV_CODEC_ID_H264)
-    av_opt_set(c->priv_data, "preset", "slow", 0);
   if (avcodec_open2(c, codec, NULL) < 0)
     throw std::runtime_error("Could not open codec!");
 

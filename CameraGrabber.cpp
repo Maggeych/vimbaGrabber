@@ -24,7 +24,7 @@ CameraGrabber::~CameraGrabber() {
 // _____________________________________________________________________________
 void CameraGrabber::init(AVT::VmbAPI::CameraPtr cameraPtr,
     std::string pixelFormat, VmbInt64_t width, VmbInt64_t height,
-    AVT::VmbAPI::IFrameObserverPtr receiverPtr) {
+    float fps, AVT::VmbAPI::IFrameObserverPtr receiverPtr) {
   camera = cameraPtr;
 
   VmbErrorType result;
@@ -53,12 +53,13 @@ void CameraGrabber::init(AVT::VmbAPI::CameraPtr cameraPtr,
   if (height == 0) setMaxValueModulo2("Height");
   else setFeatureToValue("Height", height);
 
+  // Set the fps.
+  setFeatureToValue("AcquisitionFrameRateMode", "Basic");
+  setFeatureToValue("AcquisitionFrameRate", (float) fps);
+
   // Get the frame allocation size.
   VmbInt64_t framesize;
-  AVT::VmbAPI::FeaturePtr feature;
-  if (camera->GetFeatureByName("PayloadSize", feature) != VmbErrorSuccess ||
-      feature->GetValue(framesize) != VmbErrorSuccess)
-    throw std::runtime_error("Could not get the payload size!");
+  getFeature("PayloadSize", framesize);
 
   // Prepare the frames.
   for (AVT::VmbAPI::FramePtrVector::iterator f = frames.begin();
@@ -128,6 +129,16 @@ void CameraGrabber::setFeatureToValue(const char* const& featureName,
 // _____________________________________________________________________________
 void CameraGrabber::setFeatureToValue(const char* const& featureName,
     VmbInt64_t value) {
+  AVT::VmbAPI::FeaturePtr feature;
+  if (camera->GetFeatureByName(featureName, feature) != VmbErrorSuccess ||
+      feature->SetValue(value) != VmbErrorSuccess)
+    throw std::runtime_error(featureName);
+  std::cout << "Set \"" << featureName << "\" to " << value << std::endl;
+}
+
+// _____________________________________________________________________________
+void CameraGrabber::setFeatureToValue(const char* const& featureName,
+    float value) {
   AVT::VmbAPI::FeaturePtr feature;
   if (camera->GetFeatureByName(featureName, feature) != VmbErrorSuccess ||
       feature->SetValue(value) != VmbErrorSuccess)

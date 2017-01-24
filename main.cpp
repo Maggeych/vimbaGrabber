@@ -10,11 +10,12 @@
 #include "CameraGrabber.h"
 #include "FFmpegOutput.h"
 
+int width = 640;
+int height = 480;
+std::string crf = "0";  // 0 means lossless. The higher the lossier.
+
 int main(int argc, char* argv[]) {
-  int width = 640;
-  int height = 480;
   int fps = 24;
-  int bitRate = 400000;
   std::string pixelFormat = "Mono8";
 
   int ret = EXIT_SUCCESS;
@@ -60,12 +61,11 @@ int main(int argc, char* argv[]) {
 
       // Create the ffmpeg output instance.
       receivers[i] =
-        AVT::VmbAPI::IFrameObserverPtr(new FFmpegOutput(fn.str(),
-            AV_CODEC_ID_H264, width, height, fps, bitRate, cameras[i],
-            framePixFmtInAvCodec, frameLineSize));
+        AVT::VmbAPI::IFrameObserverPtr(new FFmpegOutput(fn.str(), width, height,
+              fps, crf, cameras[i], framePixFmtInAvCodec, frameLineSize));
 
       // Initialize the camera controller.
-      grabbers[i].init(cameras[i], pixelFormat, width, height, receivers[i]);
+      grabbers[i].init(cameras[i], pixelFormat, width, height, fps, receivers[i]);
     }
 
     // Start recording. These calls are super fast, so we assume this guarantees

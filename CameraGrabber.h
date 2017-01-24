@@ -18,7 +18,8 @@ class CameraGrabber {
   // Initialize the grabber with a camera pointer and a frame receiver.
   // This opens the given camera and sets all parameters.
   void init(AVT::VmbAPI::CameraPtr cam, std::string pixelFormat,
-      VmbInt64_t width, VmbInt64_t height, AVT::VmbAPI::IFrameObserverPtr rec);
+      VmbInt64_t width, VmbInt64_t height, float fps,
+      AVT::VmbAPI::IFrameObserverPtr rec);
 
   // ___________________________________________________________________________
   // Start/stop image acquisition.
@@ -40,6 +41,7 @@ class CameraGrabber {
   // ___________________________________________________________________________
   void setFeatureToValue(const char* const& featureName, const char* const& value);
   void setFeatureToValue(const char* const& featureName, VmbInt64_t value);
+  void setFeatureToValue(const char* const& featureName, float value);
   void getFeature(const char* const& featureName, VmbInt64_t& val) const;
   void getFeature(const char* const& featureName, std::string& val) const;
 
