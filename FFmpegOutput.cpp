@@ -162,13 +162,13 @@ static int lockmgr(void **mtx, enum AVLockOp op) {
 }
 
 // _____________________________________________________________________________
-void FFmpegOutput::initMultiThreadSafe() {
+void FFmpegOutput::initFFmpeg() {
   avcodec_register_all();
   av_log_set_level(AV_LOG_QUIET);
   if(av_lockmgr_register(lockmgr))
     throw std::runtime_error("Couldn't make ffmpeg multi-thread safe!");
 }
 // _____________________________________________________________________________
-void FFmpegOutput::closeMultiThreadSafe() {
+void FFmpegOutput::closeFFmpeg() {
   av_lockmgr_register(NULL);
 }

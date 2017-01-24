@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     // Needed in order to set ffmpegs mutexes. We use Vimba in asynchronous
     // mode, so frames are received from different threads. Therefore ffmpeg
     // needs to be multi-thread safe and we need to init its mutexes.
-    FFmpegOutput::initMultiThreadSafe();
+    FFmpegOutput::initFFmpeg();
 
     if (system.Startup() != VmbErrorSuccess)
       throw std::runtime_error("Could not start VimbaSystem!");
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Cleanup.
-  FFmpegOutput::closeMultiThreadSafe();
+  FFmpegOutput::closeFFmpeg();
   system.Shutdown();
 
   return ret;

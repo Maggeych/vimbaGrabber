@@ -44,8 +44,8 @@ class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
   // ___________________________________________________________________________
   // These need to be called at program start and end if the FrameReceived calls
   // come from different threads. It enables ffmpegs mutex system.
-  static void initMultiThreadSafe();
-  static void closeMultiThreadSafe();
+  static void initFFmpeg();
+  static void closeFFmpeg();
   // ___________________________________________________________________________
 };
 

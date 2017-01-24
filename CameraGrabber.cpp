@@ -12,8 +12,8 @@ CameraGrabber::CameraGrabber() : frames(FRAMEBUFFER_SIZE)/*, camera(NULL) */ {
 
 // _____________________________________________________________________________
 CameraGrabber::~CameraGrabber() {
-  std::cout << "Deinitialize..." << std::endl;
   if (camera != NULL) {
+    std::cout << "Deinitialize..." << std::endl;
     camera->EndCapture();
     camera->FlushQueue();
     camera->RevokeAllFrames();
