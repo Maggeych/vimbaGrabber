@@ -1,5 +1,7 @@
 # vimbaGrabber
-Simple grabber recording **synchronized videos** from all connected [Allied Vision Technologies](https://www.alliedvision.com/) USB 3.0 cameras using the Vimba SDK.
+Simple grabber recording **synchronized videos** from all connected [Allied Vision Technologies](https://www.alliedvision.com/) USB 3.0 cameras using the Vimba SDK. It outputs the raw lossless h264 encoded video stream. In case your program can't read the raw frame data you need to pack it into a video container using ffmpeg. 
+For example in order to pack a proper Matroska (*.mkv) container while still using a lossless compression run: 
+`ffmpeg -c:v libx264 -crf 0 -i vimba_camera00.raw vimba_camera00.mkv`
 ## Building on Ubuntu 16.04
 0. Install build essentials: `sudo apt-get install build-essential`.
 1. Install video encoder dependencies: `sudo apt-get install libavcodec-dev libswscale-dev libavdevice-dev libavfilter-dev libavformat-dev`.
