@@ -26,7 +26,7 @@ INCLUDE_DIRS        = -I$(SOURCE_DIR) \
 
 LIBS                = $(VIMBACPP_LIBS) \
                       $(VIMBAIMAGETRANSFORM_LIBS) \
-					  -lrt
+					  -lrt -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -pthread
 
 DEFINES             =
 
@@ -34,7 +34,7 @@ CFLAGS              = $(COMMON_CFLAGS) \
                       $(VIMBACPP_CFLAGS) \
                       $(VIMBAIMAGETRANSFORM_CFLAGS)
 
-OBJ_FILES           = $(OBJ_DIR)/CameraGrabber.o \
+OBJ_FILES           = $(OBJ_DIR)/FFmpegOutput.o $(OBJ_DIR)/CameraGrabber.o \
                       $(OBJ_DIR)/main.o
 
 DEPENDENCIES        = VimbaCPP \

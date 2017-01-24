@@ -8,22 +8,6 @@
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 
-#define FRAMEBUFFER_SIZE 3
-
-class CameraOutput : virtual public AVT::VmbAPI::IFrameObserver {
- public:
-  // ___________________________________________________________________________
-  CameraOutput(AVT::VmbAPI::CameraPtr camera) : IFrameObserver(camera) {}
-  virtual ~CameraOutput() {}
-
-  // ___________________________________________________________________________
-  void FrameReceived(const AVT::VmbAPI::FramePtr frame) {
-    std::cout << "Got a frame!" << std::endl;
-    m_pCamera->QueueFrame(frame);
-  }
-
-};
-
 class CameraGrabber {
  public:
   // ___________________________________________________________________________
@@ -31,9 +15,10 @@ class CameraGrabber {
   ~CameraGrabber();
 
   // ___________________________________________________________________________
-  // Initialize the grabber with a camera pointer. This opens the given camera
-  // and sets all parameters.
-  void init(AVT::VmbAPI::CameraPtr cameraPtr);
+  // Initialize the grabber with a camera pointer and a frame receiver.
+  // This opens the given camera and sets all parameters.
+  void init(AVT::VmbAPI::CameraPtr cam, std::string pixelFormat,
+      VmbInt64_t width, VmbInt64_t height, AVT::VmbAPI::IFrameObserverPtr rec);
 
   // ___________________________________________________________________________
   // Start/stop image acquisition.
@@ -46,10 +31,17 @@ class CameraGrabber {
       throw std::runtime_error("Couldn't stop acquisition!");
   }
 
+ private:
   // ___________________________________________________________________________
   // Set the given feature to its maximum value that is divisable by two. Used
   // to set an even frame resolution.
   void setMaxValueModulo2(const char* const& featureName);
+
+  // ___________________________________________________________________________
+  void setFeatureToValue(const char* const& featureName, const char* const& value);
+  void setFeatureToValue(const char* const& featureName, VmbInt64_t value);
+  void getFeature(const char* const& featureName, VmbInt64_t& val) const;
+  void getFeature(const char* const& featureName, std::string& val) const;
 
   // ___________________________________________________________________________
   AVT::VmbAPI::CameraPtr camera;  // The camera pointer.
