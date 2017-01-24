@@ -40,7 +40,7 @@ void CameraGrabber::init(AVT::VmbAPI::CameraPtr cameraPtr,
     throw std::runtime_error("Could not get the camera's name!");
 
   // Open the camera.
-  if (camera->Open(VmbAccessModeRead) != VmbErrorSuccess)
+  if (camera->Open(VmbAccessModeFull) != VmbErrorSuccess)
     throw std::runtime_error("Could not open the camera!");
 
   // Set pixel format.
