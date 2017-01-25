@@ -1,21 +1,109 @@
 // Copyright © 2017, Freiburg.
 // Author: Markus Frey. All Rights Reserved.
 
+#include <getopt.h>
+
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cstdlib>
 #include <exception>
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 #include "CameraGrabber.h"
 #include "FFmpegOutput.h"
 
+// _____________________________________________________________________________
+void help() {
+  std::cout <<
+    "Usage: vimbaGrabber ([options]) <output label>" << std::endl <<
+    "  Output synchronized videos from every connected vimba camera." << std::endl <<
+    "  The output files will be placed in the current folder and " << std::endl <<
+    "  named \"<output label>_runXX_cameraXX.h264\"" << std::endl <<
+    std::endl <<
+    "Options:" << std::endl <<
+    "  -w <width>, --width <width>:    Set the cameras and output videos to this width" << std::endl <<
+    "                                   default: 640" << std::endl <<
+    "  -h <height>, --height <height>: Set the cameras and output videos to this height" << std::endl <<
+    "                                   default: 480" << std::endl <<
+    "  -f <fps>, --fps <fps>:          Set the cameras and output videos to this fps" << std::endl <<
+    "                                   default: 24" << std::endl <<
+    "  -c <crf>, --crf <crf>:          Set the h246's constant rate factor, the higher the lossier" << std::endl <<
+    "                                   default: 0 (lossless)" << std::endl;
+}
+
 int width = 640;
 int height = 480;
+int fps = 24;
 std::string crf = "0";  // 0 means lossless. The higher the lossier.
+std::string label = "";
 
+// _____________________________________________________________________________
+bool parseOpt(int argc, char* const argv[]) {
+  while (true) {
+    static const struct option longopts[] = {
+      {"width", required_argument, 0, 'w'},
+      {"height", required_argument, 0, 'h'},
+      {"fps", required_argument, 0, 'f'},
+      {"crf", required_argument, 0, 'c'},
+      {0, 0, 0, 0}
+    };
+    int c = getopt_long(argc, argv, "hw:h:f:c:", longopts, NULL);
+    if (c == -1) break;
+
+    switch (c) {
+     case 'w':
+      width = std::atoi(optarg);
+      break;
+     case 'h':
+      height = std::atoi(optarg);
+      break;
+     case 'f':
+      fps = std::atoi(optarg);
+      break;
+     case 'c':
+      crf = optarg;
+      break;
+     case ':':
+     case '?':
+      help();
+      return false;
+    }
+  }
+
+  if (argc - optind != 1) {
+    std::cout << "No output label given!" << std::endl;
+    help();
+    return false;
+  }
+  label = argv[optind];
+
+  return true;
+}
+
+// _____________________________________________________________________________
+std::string generateFilename(size_t cameraIndex) {
+  for (size_t runNr = 1; runNr < (size_t) - 1; ++runNr) {
+    std::ostringstream fn;
+    fn << label << "_run" << std::setfill('0') << std::setw(2) << runNr
+      << "_camera" << std::setfill('0') << std::setw(2) << cameraIndex + 1
+      << ".h264";
+    // Create a temporary std::string or c_str will be weird.
+    std::string fnStr = fn.str();
+    if (FILE *file = fopen(fnStr.c_str(), "r")) {
+      fclose(file);
+    } else {
+      return fnStr;
+    }
+  }
+  throw std::runtime_error("Couldn't generate the output filename!");
+  return "";  // Never reached.
+}
+
+// _____________________________________________________________________________
 int main(int argc, char* argv[]) {
-  int fps = 24;
+  if (!parseOpt(argc, argv)) return EXIT_FAILURE;
+
   std::string pixelFormat = "Mono8";
 
   int ret = EXIT_SUCCESS;
@@ -41,16 +129,15 @@ int main(int argc, char* argv[]) {
 
     // Initialize every camera. This takes a while, which is why we call
     // startAcquisition separately.
-    std::vector<AVT::VmbAPI::IFrameObserverPtr> receivers(cameras.size());
     std::vector<CameraGrabber> grabbers(cameras.size());
+    std::vector<AVT::VmbAPI::IFrameObserverPtr> receivers(cameras.size());
+
     for (size_t i = 0; i < cameras.size(); ++i) {
-      // Generate the output filename.
-      std::ostringstream fn;
-      fn << "vimba_camera" << std::setfill('0') << std::setw(2) << i << ".h264";
 
       // Needed to tell libav how to read in the raw camera frame data.
       AVPixelFormat framePixFmtInAvCodec;
       int frameLineSize[3] = {0, 0, 0};
+      // TODO: Add other if cases for different vimba pixel formats.
       if (pixelFormat == "Mono8") {
         framePixFmtInAvCodec = AV_PIX_FMT_GRAY8;
         frameLineSize[0] = width;
@@ -59,10 +146,17 @@ int main(int argc, char* argv[]) {
             "format in ffmpeg!");
       }
 
-      // Create the ffmpeg output instance.
-      receivers[i] =
-        AVT::VmbAPI::IFrameObserverPtr(new FFmpegOutput(fn.str(), width, height,
-              fps, crf, cameras[i], framePixFmtInAvCodec, frameLineSize));
+      // Get the output name.
+      std::string fn = generateFilename(i);
+      std::cout << "Output file " << i + 1 << ": " << fn << std::endl;
+
+      // Create the ffmpeg output observer.
+      receivers[i] = AVT::VmbAPI::IFrameObserverPtr(
+            new FFmpegOutput(
+              fn, width, height, fps, crf, cameras[i],
+              framePixFmtInAvCodec, frameLineSize  // Describes the received vimba frame.
+            )
+        );
 
       // Initialize the camera controller.
       grabbers[i].init(cameras[i], pixelFormat, width, height, fps, receivers[i]);
