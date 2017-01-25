@@ -7,6 +7,10 @@ Simple grabber recording **synchronized videos** from all connected [Allied Visi
 3. Modify *VIMBASDK_DIR* in `build/Makefile` to point to the SDK's extraction folder. Alternatively you can create a symbolic link to the extracted SDK archive in this projects root folder: `ln -s /path/to/Vimba_2_0 /path/to/vimbaGrabber`.
 4. Start the build with `cd build; make`. The executable will be in `build/binary/<architecture>/vimbaGrabber`.
 
+## Installation:
+To make vimbaGrabber accessible across the system simply generate a symbolic link inside `/usr/local/bin`:
+
+`sudo ln -s /path/to/vimbaGrabber/build/binary/<architecture>/vimbaGrabber /usr/local/bin/vimbaGrabber`
 ## Usage:
 <pre>Usage: vimbaGrabber ([options]) <output label>
   Output synchronized videos from every connected vimba camera.
