@@ -187,8 +187,8 @@ int main(int argc, char* argv[]) {
           cv::Mat frame;
           lastFrames[i].get(frame);
           if (frame.cols > 0 && frame.rows > 0) {
-            char wndName[8];
-            sprintf(wndName, "Camera%02d", i);
+            char wndName[16];
+            sprintf(wndName, "Camera%lu", i + 1);
             cv::imshow(wndName, frame);
           }
         }
