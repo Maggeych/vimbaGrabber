@@ -34,7 +34,7 @@ DEFINES             =
 
 CFLAGS              = $(COMMON_CFLAGS) \
                       $(VIMBACPP_CFLAGS) \
-                      $(VIMBAIMAGETRANSFORM_CFLAGS)
+                      $(VIMBAIMAGETRANSFORM_CFLAGS) -std=c++11
 
 OBJ_FILES           = $(OBJ_DIR)/FFmpegOutput.o $(OBJ_DIR)/CameraGrabber.o \
                       $(OBJ_DIR)/main.o
