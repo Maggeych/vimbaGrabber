@@ -3,7 +3,7 @@
 
 #include <getopt.h>
 
-#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -175,13 +175,16 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < grabbers.size(); ++i) grabbers[i].startAcquisition();
 
     if (showCameraInput) {
+      std::cout << "Recording. Press <esc> to stop..." << std::endl;
       while (true) {
         for (size_t i = 0; i < lastFrames.size(); ++i) {
           cv::Mat frame;
           lastFrames[i].get(frame);
-          if (i == 0) cv::imshow("test", frame);
+          if (frame.cols > 0 && frame.rows > 0) {
+            if (i == 0) cv::imshow("test", frame);
+          }
         }
-        if ((char)13 == cv::waitKey(30)) break;
+        if ((char)27 == cv::waitKey(30)) break;
       }
     } else {
       // Wait for <enter>.
