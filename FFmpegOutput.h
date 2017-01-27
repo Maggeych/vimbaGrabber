@@ -13,6 +13,9 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#include <cxcore.hpp>
+
+#include <mutex>  // Requires C++11!
 #include <string>
 
 class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
@@ -27,7 +30,7 @@ class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
   void FrameReceived(const AVT::VmbAPI::FramePtr vimbaFrame);
 
  private:
-  pthread_mutex_t lock;
+  std::mutex vimbaRecieveLock;
   AVPixelFormat outputPixFmt;
   AVPixelFormat inputPixFmt;
   int* inputLineSize;
@@ -39,6 +42,9 @@ class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
   struct SwsContext *sws_context = NULL;
 
   void fillFFmpegFrameFromData(uint8_t *img);
+
+  std::mutex lastFrameLock;
+  cv::Mat lastFrame;
 
  public:
   // ___________________________________________________________________________

@@ -23,10 +23,12 @@ include $(MAKE_INCLUDE_DIR)/VimbaImageTransform.mk
 SOURCE_DIR          = $(PROJECT_DIR)
 INCLUDE_DIRS        = -I$(SOURCE_DIR) \
                       -I$(EXAMPLES_DIR) \
+`pkg-config --cflags opencv`
 
 LIBS                = $(VIMBACPP_LIBS) \
                       $(VIMBAIMAGETRANSFORM_LIBS) \
-					  -lrt -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -pthread
+					  -lrt -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -pthread \
+`pkg-config --libs opencv`
 
 DEFINES             =
 
@@ -42,6 +44,7 @@ DEPENDENCIES        = VimbaCPP \
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(OBJ_DIR)
 	$(CXX) -c $(INCLUDE_DIRS) $(DEFINES) $(CFLAGS) -o $@ $<
+					  
 
 $(BIN_PATH): $(DEPENDENCIES) $(OBJ_FILES) $(BIN_DIR)
 	$(CXX) $(ARCH_CFLAGS) -o $(BIN_PATH) $(OBJ_FILES) $(LIBS) -Wl,-rpath,'$$ORIGIN'
