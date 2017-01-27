@@ -3,6 +3,8 @@
 
 #include <getopt.h>
 
+#include <opencv2/highgui.hpp>
+
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -11,6 +13,7 @@
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 #include "CameraGrabber.h"
+#include "LastFrame.h"
 #include "FFmpegOutput.h"
 
 // _____________________________________________________________________________
@@ -37,6 +40,7 @@ int height = 480;
 int fps = 24;
 std::string crf = "0";  // 0 means lossless. The higher the lossier.
 std::string label = "";
+bool showCameraInput = true;
 
 // _____________________________________________________________________________
 bool parseOpt(int argc, char* const argv[]) {
@@ -127,6 +131,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Found " << cameras.size() << " Camera(s)." << std::endl;
     if (cameras.empty()) throw std::runtime_error("No cameras connected!");
 
+    // Classes receiving the last camera frames.
+    std::vector<LastFrame> lastFrames(cameras.size());
+
     // Initialize every camera. This takes a while, which is why we call
     // startAcquisition separately.
     std::vector<CameraGrabber> grabbers(cameras.size());
@@ -154,7 +161,8 @@ int main(int argc, char* argv[]) {
       receivers[i] = AVT::VmbAPI::IFrameObserverPtr(
             new FFmpegOutput(
               fn, width, height, fps, crf, cameras[i],
-              framePixFmtInAvCodec, frameLineSize  // Describes the received vimba frame.
+              framePixFmtInAvCodec, frameLineSize, // Describes the received vimba frame.
+              &lastFrames[i]
             )
         );
 
@@ -164,11 +172,22 @@ int main(int argc, char* argv[]) {
 
     // Start recording. These calls are super fast, so we assume this guarantees
     // synchronized images.
-    for (size_t i = 0; i < cameras.size(); ++i) grabbers[i].startAcquisition();
+    for (size_t i = 0; i < grabbers.size(); ++i) grabbers[i].startAcquisition();
 
-    // Wait for <enter>.
-    std::cout << "Recording. Press <enter> to stop..." << std::endl;
-    getchar();
+    if (showCameraInput) {
+      while (true) {
+        for (size_t i = 0; i < lastFrames.size(); ++i) {
+          cv::Mat frame;
+          lastFrames[i].get(frame);
+          if (i == 0) cv::imshow("test", frame);
+        }
+        if ((char)13 == cv::waitKey(30)) break;
+      }
+    } else {
+      // Wait for <enter>.
+      std::cout << "Recording. Press <enter> to stop..." << std::endl;
+      getchar();
+    }
 
     // Stop recording.
     std::cout << "Stopping..." << std::endl;

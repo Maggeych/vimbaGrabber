@@ -23,7 +23,7 @@ include $(MAKE_INCLUDE_DIR)/VimbaImageTransform.mk
 SOURCE_DIR          = $(PROJECT_DIR)
 INCLUDE_DIRS        = -I$(SOURCE_DIR) \
                       -I$(EXAMPLES_DIR) \
-`pkg-config --cflags opencv`
+`pkg-config --cflags opencv` -I/usr/include/
 
 LIBS                = $(VIMBACPP_LIBS) \
                       $(VIMBAIMAGETRANSFORM_LIBS) \

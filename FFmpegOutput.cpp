@@ -5,13 +5,16 @@
 
 #include <iostream>
 
+#include "LastFrame.h"
+
 // _____________________________________________________________________________
 FFmpegOutput::FFmpegOutput(std::string fn, int width, int height, int fps,
     std::string crf, AVT::VmbAPI::CameraPtr camera, AVPixelFormat cameraPixFmt,
-    int* cameraLineSize) :
+    int* cameraLineSize, LastFrame* lastFrame) :
     IFrameObserver(camera),
     inputPixFmt(cameraPixFmt),
-    inputLineSize(cameraLineSize) {
+    inputLineSize(cameraLineSize),
+    lastFrame(lastFrame) {
   // Get the codec handle.
   AVCodec *codec;
   codec = (AVCodec*) avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -114,11 +117,9 @@ void FFmpegOutput::FrameReceived(const AVT::VmbAPI::FramePtr vimbaFrame) {
     }
   }
 
-  // Write lastFrame.
-  {
-    cv::Mat vimbaCVFrame(c->height, c->width, CV_8UC1, img);
-    vimbaCVFrame.copyTo(lastFrame);
-  }
+  // Update lastFrame if given.
+  if (lastFrame != NULL)
+    lastFrame->update(img, c->width, c->height, inputPixFmt);
 
   // Requeue.
   m_pCamera->QueueFrame(vimbaFrame);

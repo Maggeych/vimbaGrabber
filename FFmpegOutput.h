@@ -18,15 +18,18 @@ extern "C" {
 #include <mutex>  // Requires C++11!
 #include <string>
 
+class LastFrame;
+
 class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
  public:
   // FFmpegOutput writes each received frame of <camera> to a video file
   // <filename> using h264.
   FFmpegOutput(std::string fn, int width, int height, int fps, std::string crf,
       AVT::VmbAPI::CameraPtr camera, AVPixelFormat cameraPixFmt,
-      int* cameraLineSize);
+      int* cameraLineSize, LastFrame* lastFrame = NULL);
   virtual ~FFmpegOutput();
 
+  // Vimba callback.
   void FrameReceived(const AVT::VmbAPI::FramePtr vimbaFrame);
 
  private:
@@ -43,8 +46,7 @@ class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
 
   void fillFFmpegFrameFromData(uint8_t *img);
 
-  std::mutex lastFrameLock;
-  cv::Mat lastFrame;
+  LastFrame* lastFrame;
 
  public:
   // ___________________________________________________________________________
