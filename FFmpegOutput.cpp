@@ -5,14 +5,16 @@
 
 #include <iostream>
 
+#include "LastFrame.h"
+
 // _____________________________________________________________________________
 FFmpegOutput::FFmpegOutput(std::string fn, int width, int height, int fps,
     std::string crf, AVT::VmbAPI::CameraPtr camera, AVPixelFormat cameraPixFmt,
-    int* cameraLineSize) :
+    int* cameraLineSize, LastFrame* lastFrame) :
     IFrameObserver(camera),
     inputPixFmt(cameraPixFmt),
-    inputLineSize(cameraLineSize) {
-  pthread_mutex_init(&lock, NULL);
+    inputLineSize(cameraLineSize),
+    lastFrame(lastFrame) {
   // Get the codec handle.
   AVCodec *codec;
   codec = (AVCodec*) avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -73,7 +75,6 @@ FFmpegOutput::~FFmpegOutput() {
   fwrite(endCode, 1, sizeof(endCode), file);
 
   // Cleanup.
-  pthread_mutex_destroy(&lock);
   fclose(file);
   avcodec_close(c);
   av_free(c);
@@ -90,32 +91,37 @@ void FFmpegOutput::FrameReceived(const AVT::VmbAPI::FramePtr vimbaFrame) {
 	if (receiveStatus != VmbFrameStatusComplete)
 	  throw std::runtime_error("Received an incomplete frame!");
 
-  // Lock for the other vimba frame buffer threads.
-  pthread_mutex_lock(&lock);
-
-  // Fill the ffmpeg frame buffer with the outputPixFmt type image.
   VmbUchar_t* img;
-  if (vimbaFrame->GetImage(img) != VmbErrorSuccess)
-	  throw std::runtime_error("Could not get the frame's image data!");
+  // Lock for the other vimba frame buffer threads.
+  {
+    std::lock_guard<std::mutex> guard(vimbaRecieveLock);
 
-  fillFFmpegFrameFromData(img);
+    // Fill the ffmpeg frame buffer with the outputPixFmt type image.
+    if (vimbaFrame->GetImage(img) != VmbErrorSuccess)
+      throw std::runtime_error("Could not get the frame's image data!");
 
-  // Receive the encoded frame data.
-  av_init_packet(&pkt);
-  pkt.data = NULL;
-  pkt.size = 0;
-  int gotOutput;
-  if (avcodec_encode_video2(c, &pkt, ffmpegFrame, &gotOutput) < 0)
-    throw std::runtime_error("Error encoding frame!");
+    fillFFmpegFrameFromData(img);
 
-  // If there's encoded data write it to the file.
-  if (gotOutput) {
-    fwrite(pkt.data, 1, pkt.size, file);
-    av_packet_unref(&pkt);
+    // Receive the encoded frame data.
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+    int gotOutput;
+    if (avcodec_encode_video2(c, &pkt, ffmpegFrame, &gotOutput) < 0)
+      throw std::runtime_error("Error encoding frame!");
+
+    // If there's encoded data write it to the file.
+    if (gotOutput) {
+      fwrite(pkt.data, 1, pkt.size, file);
+      av_packet_unref(&pkt);
+    }
   }
 
-  // Unlock, requeue.
-  pthread_mutex_unlock(&lock);
+  // Update lastFrame if given.
+  if (lastFrame != NULL)
+    lastFrame->update(img, c->width, c->height, inputPixFmt);
+
+  // Requeue.
   m_pCamera->QueueFrame(vimbaFrame);
 }
 

@@ -2,3 +2,4 @@ Vimba_2_0
 Vimba_2_0/*
 build/*
 !build/Makefile
+tags

@@ -2,6 +2,9 @@
 // Author: Markus Frey. All Rights Reserved.
 
 #include <getopt.h>
+#include <stdio.h>
+
+#include <opencv2/highgui/highgui.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -11,6 +14,7 @@
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 #include "CameraGrabber.h"
+#include "LastFrame.h"
 #include "FFmpegOutput.h"
 
 // _____________________________________________________________________________
@@ -29,7 +33,8 @@ void help() {
     "  -f <fps>, --fps <fps>:          Set the cameras and output videos to this fps" << std::endl <<
     "                                   default: 24" << std::endl <<
     "  -c <crf>, --crf <crf>:          Set the h246's constant rate factor, the higher the lossier" << std::endl <<
-    "                                   default: 0 (lossless)" << std::endl;
+    "                                   default: 0 (lossless)" << std::endl <<
+    "  -s, --silent:                   Do not display the live video while recording" << std::endl;
 }
 
 int width = 640;
@@ -37,6 +42,7 @@ int height = 480;
 int fps = 24;
 std::string crf = "0";  // 0 means lossless. The higher the lossier.
 std::string label = "";
+bool showCameraInput = true;
 
 // _____________________________________________________________________________
 bool parseOpt(int argc, char* const argv[]) {
@@ -46,9 +52,10 @@ bool parseOpt(int argc, char* const argv[]) {
       {"height", required_argument, 0, 'h'},
       {"fps", required_argument, 0, 'f'},
       {"crf", required_argument, 0, 'c'},
+      {"silent", no_argument, 0, 's'},
       {0, 0, 0, 0}
     };
-    int c = getopt_long(argc, argv, "hw:h:f:c:", longopts, NULL);
+    int c = getopt_long(argc, argv, "hw:h:f:c:s", longopts, NULL);
     if (c == -1) break;
 
     switch (c) {
@@ -63,6 +70,9 @@ bool parseOpt(int argc, char* const argv[]) {
       break;
      case 'c':
       crf = optarg;
+      break;
+     case 's':
+      showCameraInput = false;
       break;
      case ':':
      case '?':
@@ -127,6 +137,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Found " << cameras.size() << " Camera(s)." << std::endl;
     if (cameras.empty()) throw std::runtime_error("No cameras connected!");
 
+    // Classes receiving the last camera frames.
+    std::vector<LastFrame> lastFrames(cameras.size());
+
     // Initialize every camera. This takes a while, which is why we call
     // startAcquisition separately.
     std::vector<CameraGrabber> grabbers(cameras.size());
@@ -154,7 +167,8 @@ int main(int argc, char* argv[]) {
       receivers[i] = AVT::VmbAPI::IFrameObserverPtr(
             new FFmpegOutput(
               fn, width, height, fps, crf, cameras[i],
-              framePixFmtInAvCodec, frameLineSize  // Describes the received vimba frame.
+              framePixFmtInAvCodec, frameLineSize, // Describes the received vimba frame.
+              &lastFrames[i]
             )
         );
 
@@ -164,11 +178,27 @@ int main(int argc, char* argv[]) {
 
     // Start recording. These calls are super fast, so we assume this guarantees
     // synchronized images.
-    for (size_t i = 0; i < cameras.size(); ++i) grabbers[i].startAcquisition();
+    for (size_t i = 0; i < grabbers.size(); ++i) grabbers[i].startAcquisition();
 
-    // Wait for <enter>.
-    std::cout << "Recording. Press <enter> to stop..." << std::endl;
-    getchar();
+    if (showCameraInput) {
+      std::cout << std::endl << "Recording. Press <ESC> to stop..." << std::endl;
+      while (true) {
+        for (size_t i = 0; i < lastFrames.size(); ++i) {
+          cv::Mat frame;
+          lastFrames[i].get(frame);
+          if (frame.cols > 0 && frame.rows > 0) {
+            char wndName[16];
+            sprintf(wndName, "Camera%lu", i + 1);
+            cv::imshow(wndName, frame);
+          }
+        }
+        if ((char)27 == cv::waitKey(30)) break;
+      }
+    } else {
+      // Wait for <enter>.
+      std::cout << std::endl << "Recording. Press <ENTER> to stop..." << std::endl;
+      getchar();
+    }
 
     // Stop recording.
     std::cout << "Stopping..." << std::endl;

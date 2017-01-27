@@ -13,7 +13,12 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#include <cxcore.hpp>
+
+#include <mutex>  // Requires C++11!
 #include <string>
+
+class LastFrame;
 
 class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
  public:
@@ -21,13 +26,14 @@ class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
   // <filename> using h264.
   FFmpegOutput(std::string fn, int width, int height, int fps, std::string crf,
       AVT::VmbAPI::CameraPtr camera, AVPixelFormat cameraPixFmt,
-      int* cameraLineSize);
+      int* cameraLineSize, LastFrame* lastFrame = NULL);
   virtual ~FFmpegOutput();
 
+  // Vimba callback.
   void FrameReceived(const AVT::VmbAPI::FramePtr vimbaFrame);
 
  private:
-  pthread_mutex_t lock;
+  std::mutex vimbaRecieveLock;
   AVPixelFormat outputPixFmt;
   AVPixelFormat inputPixFmt;
   int* inputLineSize;
@@ -39,6 +45,8 @@ class FFmpegOutput : virtual public AVT::VmbAPI::IFrameObserver {
   struct SwsContext *sws_context = NULL;
 
   void fillFFmpegFrameFromData(uint8_t *img);
+
+  LastFrame* lastFrame;
 
  public:
   // ___________________________________________________________________________
