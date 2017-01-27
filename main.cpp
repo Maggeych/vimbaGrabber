@@ -2,6 +2,7 @@
 // Author: Markus Frey. All Rights Reserved.
 
 #include <getopt.h>
+#include <stdio.h>
 
 #include <opencv2/highgui/highgui.hpp>
 
@@ -32,7 +33,8 @@ void help() {
     "  -f <fps>, --fps <fps>:          Set the cameras and output videos to this fps" << std::endl <<
     "                                   default: 24" << std::endl <<
     "  -c <crf>, --crf <crf>:          Set the h246's constant rate factor, the higher the lossier" << std::endl <<
-    "                                   default: 0 (lossless)" << std::endl;
+    "                                   default: 0 (lossless)" << std::endl <<
+    "  -s, --silent:                   Do not display the live video while recording" << std::endl;
 }
 
 int width = 640;
@@ -50,9 +52,10 @@ bool parseOpt(int argc, char* const argv[]) {
       {"height", required_argument, 0, 'h'},
       {"fps", required_argument, 0, 'f'},
       {"crf", required_argument, 0, 'c'},
+      {"silent", no_argument, 0, 's'},
       {0, 0, 0, 0}
     };
-    int c = getopt_long(argc, argv, "hw:h:f:c:", longopts, NULL);
+    int c = getopt_long(argc, argv, "hw:h:f:c:s", longopts, NULL);
     if (c == -1) break;
 
     switch (c) {
@@ -67,6 +70,9 @@ bool parseOpt(int argc, char* const argv[]) {
       break;
      case 'c':
       crf = optarg;
+      break;
+     case 's':
+      showCameraInput = false;
       break;
      case ':':
      case '?':
@@ -175,20 +181,22 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < grabbers.size(); ++i) grabbers[i].startAcquisition();
 
     if (showCameraInput) {
-      std::cout << "Recording. Press <esc> to stop..." << std::endl;
+      std::cout << std::endl << "Recording. Press <ESC> to stop..." << std::endl;
       while (true) {
         for (size_t i = 0; i < lastFrames.size(); ++i) {
           cv::Mat frame;
           lastFrames[i].get(frame);
           if (frame.cols > 0 && frame.rows > 0) {
-            if (i == 0) cv::imshow("test", frame);
+            char wndName[8];
+            sprintf(wndName, "Camera%02d", i);
+            cv::imshow(wndName, frame);
           }
         }
         if ((char)27 == cv::waitKey(30)) break;
       }
     } else {
       // Wait for <enter>.
-      std::cout << "Recording. Press <enter> to stop..." << std::endl;
+      std::cout << std::endl << "Recording. Press <ENTER> to stop..." << std::endl;
       getchar();
     }
 
